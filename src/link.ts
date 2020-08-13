@@ -12,7 +12,7 @@ import {defaults, LinkOptions} from './link-options'
 import {LinkChannelSession, LinkFallbackSession, LinkSession} from './link-session'
 import {LinkStorage} from './link-storage'
 import {LinkTransport} from './link-transport'
-import {abiEncode, fetch, generatePrivateKey, normalizePublicKey, publicKeyEqual} from './utils'
+import {abiEncode, accountAuthEqual, fetch, generatePrivateKey, normalizePublicKey, publicKeyEqual} from './utils'
 
 /** EOSIO permission level with actor and signer, a.k.a. 'auth', 'authority' or 'account auth' */
 export type PermissionLevel = esr.abi.PermissionLevel
@@ -375,9 +375,18 @@ export class Link implements esr.AbiProvider {
         const auth = permission.required_auth
         const keyAuth = auth.keys.find(({key}) => publicKeyEqual(key, signerKey))
         if (!keyAuth) {
-            throw new IdentityError(`${formatAuth(signer)} has no key matching id signature`)
+            const { accounts } = await this.rpc.fetch('/v1/chain/get_accounts_by_authorizers', {
+                keys: [signerKey]
+            })
+            const accountAuth = auth.accounts.find(({permission}) => accountAuthEqual(signerKey, permission, accounts))
+            if (!accountAuth) {
+                throw new IdentityError(`${formatAuth(signer)} has no key matching id signature`)
+            }
+            if (auth.threshold > accountAuth.weight) {
+                throw new IdentityError(`${formatAuth(signer)} signature does not reach auth threshold`)
+            }
         }
-        if (auth.threshold > keyAuth.weight) {
+        if (keyAuth && auth.threshold > keyAuth.weight) {
             throw new IdentityError(`${formatAuth(signer)} signature does not reach auth threshold`)
         }
         if (requestPermission) {

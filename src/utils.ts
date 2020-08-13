@@ -79,6 +79,16 @@ export function publicKeyEqual(keyA: string, keyB: string) {
     return normalizePublicKey(keyA) === normalizePublicKey(keyB)
 }
 
+export function accountAuthEqual(signerKey, permission, accounts) {
+    console.log("permission", permission)
+    console.log("accounts", accounts)
+    return accounts.find(({account_name, authorizing_key, permission_name}) => (
+        account_name === permission.actor
+        && authorizing_key === signerKey
+        && permission_name === permission.permission
+    ))
+}
+
 /**
  * Generate a random private key.
  * Uses browser crypto if available, otherwise falls back to slow eosjs-ecc.
