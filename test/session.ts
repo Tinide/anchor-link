@@ -7,6 +7,7 @@ import {
     API,
     APIClient,
     APIProvider,
+    Checksum256,
     PermissionLevel,
     PrivateKey,
     TimePointSec,
@@ -137,6 +138,10 @@ const client = new APIClient({provider: manager})
 const link = new Link({client, transport: manager, service: manager})
 
 suite('session', function () {
+    test('checksum256 as chainId', function() {
+        const chainId = Checksum256.from('2a02a0053e5a8cf73a56ba0fda11e4d92e0238a4a2aa74fccf46d5a910746840')
+        new Link({chainId})
+    })
     test('login & transact', async function () {
         const {account, session, transaction, resolvedTransaction} = await link.login('test')
         assert.equal(String(account.account_name), 'foobar')
